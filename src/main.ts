@@ -28,5 +28,5 @@ const FILE_TEST = "./test.json";
     original: cloned === project,
   });
 
-  await project.write(FILE_TEST, true);
+  await project.write(FILE_TEST, { is_formatted: true });
 })();

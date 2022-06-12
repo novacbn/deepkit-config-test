@@ -1,14 +1,19 @@
 import { readFile, writeFile } from "fs/promises";
 
-import { MinLength, MaxLength, UUID } from "@deepkit/type";
+import { MaxLength, MinLength, UUID } from "@deepkit/type";
 import {
   cast,
-  deserialize,
   is,
   resolveReceiveType,
   serialize,
   uuid,
 } from "@deepkit/type";
+
+export interface IDataClassParseOptions {}
+
+export interface IDataClassStringifyOptions {
+  is_formatted?: boolean;
+}
 
 export class DataClass {
   static from<B extends typeof DataClass, I = InstanceType<B>>(
@@ -35,39 +40,59 @@ export class DataClass {
 
   static parse<B extends typeof DataClass, I = InstanceType<B>>(
     this: B,
-    text: string
+    text: string,
+    // @ts-expect-error - TODO: reserving argument
+    options: IDataClassParseOptions = {}
   ): I | never {
     const properties = JSON.parse(text);
 
     return this.from(properties);
   }
 
-  clone(): this {
-    return deserialize<typeof this>(this);
+  static stringify<B extends typeof DataClass, I = InstanceType<B>>(
+    this: B,
+    properties: any,
+    options: IDataClassStringifyOptions = {}
+  ): string {
+    const { is_formatted = false } = options;
+
+    const serialized = serialize<I>(
+      properties,
+      undefined,
+      undefined,
+      undefined,
+      resolveReceiveType(this)
+    );
+
+    return JSON.stringify(serialized, null, is_formatted ? 4 : undefined);
   }
 
-  stringify(is_pretty: boolean = false): string {
-    return JSON.stringify(
-      serialize<typeof this>(this),
-      null,
-      is_pretty ? 4 : undefined
-    );
+  clone(): this {
+    return (this.constructor as typeof DataClass).from(this);
+  }
+
+  stringify(options?: IDataClassStringifyOptions): string {
+    return (this.constructor as typeof DataClass).stringify(this, options);
   }
 }
 
 export class Configuration extends DataClass {
   static async read<B extends typeof DataClass, I = InstanceType<B>>(
     this: B,
-    path: string
+    path: string,
+    options: IDataClassParseOptions = {}
   ): Promise<I> | never {
     const buffer = await readFile(path);
     const text = buffer.toString();
 
-    return this.parse(text);
+    return this.parse(text, options);
   }
 
-  write(path: string, is_pretty: boolean = false): Promise<void> | never {
-    const text = this.stringify(is_pretty);
+  write(
+    path: string,
+    options?: IDataClassStringifyOptions
+  ): Promise<void> | never {
+    const text = this.stringify(options);
 
     return writeFile(path, text);
   }
