@@ -1,13 +1,10 @@
 import { readFile, writeFile } from "fs/promises";
 
 import { MaxLength, MinLength, UUID } from "@deepkit/type";
-import {
-  cast,
-  is,
-  resolveReceiveType,
-  serialize,
-  uuid,
-} from "@deepkit/type";
+import { cast, is, resolveReceiveType, serialize, uuid } from "@deepkit/type";
+import { Temporal } from "@js-temporal/polyfill";
+
+import { SIM_SERIALIZER, Instant } from "./serializers";
 
 export interface IDataClassParseOptions {}
 
@@ -23,7 +20,7 @@ export class DataClass {
     const data = cast<I>(
       properties,
       undefined,
-      undefined,
+      SIM_SERIALIZER,
       undefined,
       resolveReceiveType(this)
     );
@@ -35,7 +32,7 @@ export class DataClass {
     this: B,
     value: any
   ): value is I {
-    return is<I>(value, undefined, undefined, resolveReceiveType(this));
+    return is<I>(value, SIM_SERIALIZER, undefined, resolveReceiveType(this));
   }
 
   static parse<B extends typeof DataClass, I = InstanceType<B>>(
@@ -59,7 +56,7 @@ export class DataClass {
     const serialized = serialize<I>(
       properties,
       undefined,
-      undefined,
+      SIM_SERIALIZER,
       undefined,
       resolveReceiveType(this)
     );
@@ -99,13 +96,15 @@ export class Configuration extends DataClass {
 }
 
 export class Project extends Configuration {
-  readonly identifier: UUID = uuid();
+  identifier: UUID = uuid();
 
-  readonly title!: string & MinLength<3> & MaxLength<16>;
+  title!: string & MinLength<3> & MaxLength<16>;
 
-  readonly metadata: ProjectMetadata = new ProjectMetadata();
+  metadata: ProjectMetadata = new ProjectMetadata();
 }
 
 export class ProjectMetadata extends DataClass {
-  readonly created_at: Date = new Date();
+  accessed_at: Instant = Temporal.Now.instant();
+
+  created_at: Instant = Temporal.Now.instant();
 }

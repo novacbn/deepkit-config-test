@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@deepkit/core": "^1.0.1-alpha.65",
-    "@deepkit/type": "^1.0.1-alpha.71"
+    "@deepkit/type": "^1.0.1-alpha.71",
+    "@js-temporal/polyfill": "^0.4.1"
   }
 }
